@@ -8,11 +8,13 @@ use hyper::body::Frame;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{body::Body, Method, Request, Response, StatusCode};
+use std::time::Duration;
 use tokio::net::TcpListener;
 
 #[path = "../benches/support/mod.rs"]
 mod support;
 use support::TokioIo;
+use support::TokioTimer;
 
 /// This is our service handler. It receives a Request, routes on its
 /// path, and returns a Future of a Response.
@@ -100,6 +102,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
         tokio::task::spawn(async move {
             if let Err(err) = http1::Builder::new()
+                .timer(TokioTimer)
+                .header_read_timeout(Duration::from_secs(5))
                 .serve_connection(io, service_fn(echo))
                 .await
             {
